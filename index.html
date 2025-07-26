@@ -51,53 +51,62 @@
             cursor: pointer;
             border-radius: 50%;
         }
+
+        /* Style for the share button icon */
+        .share-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            stroke-width: 2;
+        }
     </style>
 </head>
 
 <body class="bg-gray-900 text-gray-100">
 
     <div id="app" class="container mx-auto p-4 md:p-8">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Iterative AI Refinement</h1>
-            <p class="text-lg text-gray-400">Using a "Tenth Man" critique to improve AI responses.</p>
-        </header>
 
-        <!-- Configuration Section -->
-        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- API Key Input -->
-                <div>
-                    <label for="apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key (Saved in
-                        Browser)</label>
-                    <input id="apiKey" type="password" placeholder="Enter your Google AI API Key"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
+        <!-- Sticky Header Wrapper -->
+        <div class="sticky top-0 z-10 bg-gray-900 pt-4 md:pt-8">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Iterative AI Refinement</h1>
+                <p class="text-lg text-gray-400">Using a "Tenth Man" critique to improve AI responses.</p>
+            </header>
+
+            <!-- Configuration Section -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- API Key Input -->
+                    <div>
+                        <label for="apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key (Saved in
+                            Browser)</label>
+                        <input id="apiKey" type="password" placeholder="Enter your Google AI API Key"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
+                    </div>
+                    <!-- Iterations Slider -->
+                    <div>
+                        <label for="iterations" class="block text-sm font-medium text-gray-300 mb-2">
+                            Refinement Iterations: <span id="iterations-value" class="font-bold text-blue-400">1</span>
+                        </label>
+                        <input id="iterations" type="range" min="1" max="5" value="1" />
+                    </div>
                 </div>
-                <!-- Iterations Slider -->
-                <div>
-                    <label for="iterations" class="block text-sm font-medium text-gray-300 mb-2">
-                        Refinement Iterations: <span id="iterations-value" class="font-bold text-blue-400">1</span>
-                    </label>
-                    <input id="iterations" type="range" min="1" max="5" value="1" />
+                <!-- Prompt Input -->
+                <div class="mt-6">
+                    <label for="prompt" class="block text-sm font-medium text-gray-300 mb-2">Your Prompt</label>
+                    <textarea id="prompt" rows="3" placeholder="e.g., Explain the benefits of a four-day work week."
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"></textarea>
+                </div>
+                <!-- Action Button -->
+                <div class="mt-6 text-center">
+                    <button id="generate-btn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
+                        Start Refinement
+                    </button>
                 </div>
             </div>
-            <!-- Prompt Input -->
-            <div class="mt-6">
-                <label for="prompt" class="block text-sm font-medium text-gray-300 mb-2">Your Prompt</label>
-                <textarea id="prompt" rows="3" placeholder="e.g., Explain the benefits of a four-day work week."
-                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"></textarea>
-            </div>
-            <!-- Action Button -->
-            <div class="mt-6 text-center">
-                <button id="generate-btn"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
-                    Start Refinement
-                </button>
-            </div>
+            <!-- Status Display Area -->
+            <div id="status-container" class="pb-4"></div>
         </div>
-
-        <!-- Status Display Area -->
-        <div id="status-container"></div>
 
         <!-- Results Section -->
         <div id="results-container" class="space-y-8"></div>
@@ -125,43 +134,44 @@
         };
 
         // --- RENDER FUNCTION ---
-        // This function updates the DOM based on the current state
         function render() {
-            // Update inputs
             apiKeyInput.value = state.apiKey;
             promptInput.value = state.prompt;
             iterationsInput.value = state.iterations;
             iterationsValue.textContent = state.iterations;
 
-            // Update button state
             generateBtn.disabled = state.isLoading;
             generateBtn.textContent = state.isLoading ? 'Generating...' : 'Start Refinement';
 
-            // Render status messages (errors or loading indicators)
             statusContainer.innerHTML = '';
             if (state.error) {
-                statusContainer.innerHTML = `<div class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-6 text-center">${state.error}</div>`;
+                statusContainer.innerHTML = `<div class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg text-center">${state.error}</div>`;
             } else if (state.isLoading && state.activeIteration !== null) {
-                statusContainer.innerHTML = `<div class="bg-blue-500/20 border border-blue-500 text-blue-300 px-4 py-3 rounded-lg mb-6 text-center animate-pulse">Processing Iteration ${state.activeIteration + 1} of ${state.iterations}...</div>`;
+                statusContainer.innerHTML = `<div class="bg-blue-500/20 border border-blue-500 text-blue-300 px-4 py-3 rounded-lg text-center animate-pulse">Processing Iteration ${state.activeIteration + 1} of ${state.iterations}...</div>`;
             }
 
-            // Render results
             resultsContainer.innerHTML = state.results.map((result, index) => `
                 <div class="bg-gray-800/50 p-4 md:p-6 rounded-2xl shadow-lg border border-gray-700">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Left Column: Response / Refinement -->
-                        <div class="bg-gray-800 p-4 rounded-lg">
-                            <h3 class="text-xl font-semibold text-white mb-3">
+                        <div class="bg-gray-800 p-4 rounded-lg relative">
+                             <button class="share-btn absolute top-3 right-3 text-gray-400 hover:text-white transition" data-content-type="response" data-index="${index}" title="Copy or Share">
+                                <svg class="share-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>
+                            </button>
+                            <h3 class="text-xl font-semibold text-white mb-3 pr-8">
                                 ${index === 0 ? 'Initial Response' : `Refinement ${index}`}
                             </h3>
                             <div class="text-gray-300 whitespace-pre-wrap">${result.response}</div>
                         </div>
                         <!-- Right Column: Critique -->
-                        <div class="bg-gray-800 p-4 rounded-lg">
-                            <h3 class="text-xl font-semibold text-white mb-3">
+                        <div class="bg-gray-800 p-4 rounded-lg relative">
+                             <button class="share-btn absolute top-3 right-3 text-gray-400 hover:text-white transition" data-content-type="critique" data-index="${index}" title="Copy or Share">
+                                <svg class="share-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>
+                            </button>
+                            <h3 class="text-xl font-semibold text-white mb-3 pr-8">
                                 Critique ${index + 1}
                             </h3>
-                            <div class="text-gray-300 whitespace-pre-wrap">${result.critique || "..."}</div>
+                            <div class="text-gray-300 whitespace-pre-wrap">${result.critique || "Awaiting critique..."}</div>
                         </div>
                     </div>
                 </div>
@@ -170,7 +180,7 @@
 
         // --- API HELPER ---
         async function callGeminiApi(prompt, apiKey) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.7, topK: 1, topP: 1, maxOutputTokens: 2048 },
@@ -209,24 +219,28 @@
             updateState({ isLoading: true, error: null, results: [] });
 
             try {
+                updateState({ activeIteration: 0 });
                 const initialPrompt = `You are an expert assistant. Provide a detailed and well-structured response to the following prompt: "${state.prompt}"`;
                 let currentResponse = await callGeminiApi(initialPrompt, state.apiKey);
 
-                let allResults = [];
+                let allResults = [{ id: 0, response: currentResponse, critique: '' }];
+                updateState({ results: [...allResults] }); // Render initial response immediately
 
                 for (let i = 0; i < state.iterations; i++) {
                     updateState({ activeIteration: i });
 
-                    const critiquePrompt = `You are the "Tenth Man," a contrarian thinker tasked with finding flaws, hidden assumptions, and alternative perspectives... Your critical analysis of:\n---\n${currentResponse}`;
+                    const critiquePrompt = `You are the "Tenth Man," a contrarian thinker tasked with finding flaws, hidden assumptions, and alternative perspectives. Your critical analysis of:\n---\n${currentResponse}`;
                     const critique = await callGeminiApi(critiquePrompt, state.apiKey);
 
-                    allResults.push({ id: i, response: currentResponse, critique: critique });
-                    updateState({ results: [...allResults] });
+                    allResults[i].critique = critique;
+                    updateState({ results: [...allResults] }); // Render critique
 
                     if (i < state.iterations - 1) {
-                        const synthesisPrompt = `You are a synthesizer. Integrate the original response with its critique to create an improved version... Original:\n---\n${currentResponse}\n---\nCritique:\n---\n${critique}\n---\nRefined response:`;
+                        const synthesisPrompt = `You are a synthesizer. Integrate the original response with its critique to create an improved version. Original:\n---\n${currentResponse}\n---\nCritique:\n---\n${critique}\n---\nRefined response:`;
                         const synthesis = await callGeminiApi(synthesisPrompt, state.apiKey);
                         currentResponse = synthesis;
+                        allResults.push({ id: i + 1, response: currentResponse, critique: '' });
+                        updateState({ results: [...allResults] }); // Render next refinement response
                     }
                 }
             } catch (err) {
@@ -236,8 +250,47 @@
             }
         }
 
+        // --- SHARE/COPY HANDLER ---
+        async function handleShare(button) {
+            const contentType = button.dataset.contentType;
+            const index = parseInt(button.dataset.index, 10);
+            const textToShare = state.results[index][contentType];
+
+            if (!textToShare) return;
+
+            // Use Web Share API if available (mobile)
+            if (navigator.share) {
+                try {
+                    await navigator.share({ text: textToShare });
+                    return;
+                } catch (err) {
+                    console.info("Web Share API cancelled.", err);
+                }
+            }
+
+            // Fallback to clipboard for desktop
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = textToShare;
+                ta.style.position = 'absolute';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+
+                // Visual feedback
+                const originalIcon = button.innerHTML;
+                button.innerHTML = `<svg class="share-icon text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`;
+                setTimeout(() => { button.innerHTML = originalIcon; }, 2000);
+
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy text.');
+            }
+        }
+
         // --- STATE UPDATE HELPER ---
-        // A helper to update state and trigger a re-render
         function updateState(newState) {
             state = { ...state, ...newState };
             render();
@@ -245,13 +298,11 @@
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Load API key from local storage
             const savedApiKey = localStorage.getItem('aiCritiqueAppApiKey');
             if (savedApiKey) {
                 updateState({ apiKey: savedApiKey });
             }
 
-            // Set up event listeners
             apiKeyInput.addEventListener('input', (e) => {
                 updateState({ apiKey: e.target.value });
                 localStorage.setItem('aiCritiqueAppApiKey', e.target.value);
@@ -260,7 +311,14 @@
             iterationsInput.addEventListener('input', (e) => updateState({ iterations: Number(e.target.value) }));
             generateBtn.addEventListener('click', handleGenerate);
 
-            // Initial render
+            // Event delegation for share buttons
+            resultsContainer.addEventListener('click', (e) => {
+                const shareButton = e.target.closest('.share-btn');
+                if (shareButton) {
+                    handleShare(shareButton);
+                }
+            });
+
             render();
         });
     </script>
