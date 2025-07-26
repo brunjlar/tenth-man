@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iterative AI Refinement</title>
+    <title>Tenth Man</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,54 +63,109 @@
 
 <body class="bg-gray-900 text-gray-100">
 
-    <div id="app" class="container mx-auto p-4 md:p-8">
+    <div id="app" class="container mx-auto p-4 md:p-8 flex flex-col min-h-screen">
 
-        <!-- Sticky Header Wrapper -->
-        <div class="sticky top-0 z-10 bg-gray-900 pt-4 md:pt-8">
-            <header class="text-center mb-8">
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Iterative AI Refinement</h1>
-                <p class="text-lg text-gray-400">Using a "Tenth Man" critique to improve AI responses.</p>
-            </header>
+        <main class="flex-grow">
+            <!-- Sticky Header Wrapper -->
+            <div class="sticky top-0 z-10 bg-gray-900 pt-4 md:pt-8">
+                <header class="text-center mb-8">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Iterative AI Refinement</h1>
+                    <p class="text-lg text-gray-400">Using a "Tenth Man" critique to improve AI responses.</p>
+                </header>
 
-            <!-- Configuration Section -->
-            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- API Key Input -->
-                    <div>
-                        <label for="apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key (Saved in
-                            Browser)</label>
-                        <input id="apiKey" type="password" placeholder="Enter your Google AI API Key"
-                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
+                <!-- Configuration Section -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- API Key Input -->
+                        <div>
+                            <label for="apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key (Saved in
+                                Browser)</label>
+                            <input id="apiKey" type="password" placeholder="Enter your Google AI API Key"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
+                        </div>
+                        <!-- Iterations Slider -->
+                        <div>
+                            <label for="iterations" class="block text-sm font-medium text-gray-300 mb-2">
+                                Refinement Iterations: <span id="iterations-value"
+                                    class="font-bold text-blue-400">2</span>
+                            </label>
+                            <input id="iterations" type="range" min="1" max="5" value="2" />
+                        </div>
                     </div>
-                    <!-- Iterations Slider -->
-                    <div>
-                        <label for="iterations" class="block text-sm font-medium text-gray-300 mb-2">
-                            Refinement Iterations: <span id="iterations-value" class="font-bold text-blue-400">1</span>
-                        </label>
-                        <input id="iterations" type="range" min="1" max="5" value="1" />
+                    <!-- Prompt Input -->
+                    <div class="mt-6 relative">
+                        <label for="prompt" class="block text-sm font-medium text-gray-300 mb-2">Your Prompt</label>
+                        <textarea id="prompt" rows="3" placeholder="e.g., Explain the benefits of a four-day work week."
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"></textarea>
+                        <button id="share-prompt-btn"
+                            class="absolute top-10 right-3 text-gray-400 hover:text-white transition"
+                            title="Copy or Share Prompt">
+                            <svg class="share-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Action Button -->
+                    <div class="mt-6 text-center">
+                        <button id="generate-btn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
+                            Start Refinement
+                        </button>
                     </div>
                 </div>
-                <!-- Prompt Input -->
-                <div class="mt-6">
-                    <label for="prompt" class="block text-sm font-medium text-gray-300 mb-2">Your Prompt</label>
-                    <textarea id="prompt" rows="3" placeholder="e.g., Explain the benefits of a four-day work week."
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"></textarea>
-                </div>
-                <!-- Action Button -->
-                <div class="mt-6 text-center">
-                    <button id="generate-btn"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 disabled:bg-gray-500 disabled:cursor-not-allowed disabled:scale-100">
-                        Start Refinement
-                    </button>
-                </div>
+                <!-- Status Display Area -->
+                <div id="status-container" class="pb-4"></div>
             </div>
-            <!-- Status Display Area -->
-            <div id="status-container" class="pb-4"></div>
-        </div>
 
-        <!-- Results Section -->
-        <div id="results-container" class="space-y-8"></div>
+            <!-- Results Section -->
+            <div id="results-container" class="space-y-8"></div>
+        </main>
+
+        <!-- **NEW**: Footer Section -->
+        <footer class="text-center py-6 text-gray-500 text-sm">
+            <button id="about-btn" class="hover:text-white transition underline mb-2">About This App</button>
+            <p>
+                Created by <a href="mailto:brunjlar@gmail.com" class="hover:text-white transition underline">Lars
+                    Brünjes</a> |
+                <a href="https://github.com/brunjlar/tenth-man" target="_blank" rel="noopener noreferrer"
+                    class="hover:text-white transition underline">GitHub</a>
+            </p>
+        </footer>
     </div>
+
+    <!-- **NEW**: About Modal -->
+    <div id="about-modal"
+        class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8 max-w-2xl w-full text-gray-300 border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white">The Tenth Man Principle</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="space-y-4 prose prose-invert max-w-none">
+                <p>This application uses an iterative AI process to generate, critique, and refine text-based responses,
+                    based on the 'Tenth Man' principle.</p>
+                <p>This rule originated with the Israeli intelligence community (Mossad) following the strategic
+                    surprise of the 1973 Yom Kippur War. To prevent future failures of imagination and avoid the trap of
+                    groupthink, a new protocol was established: if a group of ten analysts comes to a unanimous
+                    conclusion, a tenth person is designated to challenge that consensus, no matter how unlikely their
+                    dissenting argument may seem.</p>
+                <p>This forces the group to re-examine their assumptions from the ground up and strengthens the final
+                    conclusion. The concept has been popularized in media, notably in the movie <em>World War Z</em>.
+                </p>
+                <p>In this app, one AI instance generates a response, and a second 'Tenth Man' AI is specifically
+                    prompted to find flaws and offer a contrarian critique. This cycle can be repeated multiple times,
+                    with each iteration synthesizing the previous response and critique into a more robust and
+                    well-considered final answer.</p>
+            </div>
+            <div class="text-right mt-6">
+                <button id="close-modal-btn-2"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         // --- DOM Element References ---
@@ -121,12 +176,17 @@
         const generateBtn = document.getElementById('generate-btn');
         const resultsContainer = document.getElementById('results-container');
         const statusContainer = document.getElementById('status-container');
+        const sharePromptBtn = document.getElementById('share-prompt-btn');
+        const aboutBtn = document.getElementById('about-btn');
+        const aboutModal = document.getElementById('about-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const closeModalBtn2 = document.getElementById('close-modal-btn-2');
 
         // --- STATE MANAGEMENT ---
         let state = {
             apiKey: '',
             prompt: '',
-            iterations: 1,
+            iterations: 2,
             results: [],
             isLoading: false,
             error: null,
@@ -188,7 +248,6 @@
 
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-                // **FIX**: Increased maxOutputTokens to allow for longer responses
                 generationConfig: { temperature: 0.7, topK: 1, topP: 1, maxOutputTokens: 65536 },
             };
 
@@ -220,7 +279,6 @@
                     console.groupEnd();
                     return text;
                 } else {
-                    // More detailed error handling based on finishReason
                     const finishReason = candidate?.finishReason;
                     console.error(`API call finished with reason: ${finishReason}`);
                     let errorMessage = "API returned an empty or invalid response.";
@@ -236,7 +294,7 @@
             } catch (error) {
                 console.error("callGeminiApi Failed:", error);
                 console.groupEnd();
-                throw error; // Re-throw the error to be caught by handleGenerate
+                throw error;
             }
         }
 
@@ -251,7 +309,7 @@
                 return;
             }
 
-            console.clear(); // Clear console for new run
+            console.clear();
             console.group("--- Starting New Refinement Process ---");
             updateState({ isLoading: true, error: null, results: [] });
 
@@ -260,7 +318,6 @@
             const synthesizerSystemInstruction = 'You are a synthesizer and refiner. Your task is to integrate an original response with its critique to create a new, improved version. The new version should address the weaknesses and incorporate the valid points from the critique, resulting in a more robust and comprehensive answer.';
 
             try {
-                // Step 1: Initial Response
                 console.log("Step 1: Generating Initial Response...");
                 updateState({ activeIteration: 0 });
                 const initialUserPrompt = `Respond to the following prompt: "${state.prompt}"`;
@@ -270,11 +327,9 @@
                 let allResults = [{ id: 0, response: currentResponse, critique: '' }];
                 updateState({ results: [...allResults] });
 
-                // Loop for critiques and syntheses
                 for (let i = 0; i < state.iterations; i++) {
                     updateState({ activeIteration: i });
 
-                    // Step 2: Critique
                     console.log(`Step 2 (Iter ${i + 1}): Generating Critique...`);
                     const critiqueUserPrompt = `The user's original request was: "${state.prompt}"\n\nCritically analyze the following text which was generated in response to that request:\n---\n${currentResponse}`;
                     const critique = await callGeminiApi(critiqueUserPrompt, state.apiKey, tenthManSystemInstruction);
@@ -283,7 +338,6 @@
                     allResults[i].critique = critique;
                     updateState({ results: [...allResults] });
 
-                    // Step 3: Synthesis (if not the last iteration)
                     if (i < state.iterations - 1) {
                         console.log(`Step 3 (Iter ${i + 1}): Generating Synthesis...`);
                         const synthesisUserPrompt = `Original Response:\n---\n${currentResponse}\n---\nCritique of the Response:\n---\n${critique}\n---\nBased on the critique, provide a new, refined response:`;
@@ -304,13 +358,9 @@
             }
         }
 
-        // --- SHARE/COPY HANDLER ---
-        async function handleShare(button) {
-            const contentType = button.dataset.contentType;
-            const index = parseInt(button.dataset.index, 10);
-            const textToShare = state.results[index][contentType];
-
-            if (!textToShare) return;
+        // --- REFACTORED SHARE/COPY HANDLER ---
+        async function shareText(textToShare, button) {
+            if (!textToShare || !button) return;
 
             if (navigator.share) {
                 try {
@@ -347,6 +397,16 @@
             render();
         }
 
+        // --- MODAL LOGIC ---
+        function showModal() {
+            aboutModal.classList.remove('hidden');
+            aboutModal.classList.add('flex');
+        }
+        function hideModal() {
+            aboutModal.classList.add('hidden');
+            aboutModal.classList.remove('flex');
+        }
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedApiKey = localStorage.getItem('aiCritiqueAppApiKey');
@@ -362,13 +422,31 @@
             iterationsInput.addEventListener('input', (e) => updateState({ iterations: Number(e.target.value) }));
             generateBtn.addEventListener('click', handleGenerate);
 
+            sharePromptBtn.addEventListener('click', (e) => {
+                shareText(state.prompt, e.currentTarget);
+            });
+
             resultsContainer.addEventListener('click', (e) => {
                 const shareButton = e.target.closest('.share-btn');
                 if (shareButton) {
-                    handleShare(shareButton);
+                    const contentType = shareButton.dataset.contentType;
+                    const index = parseInt(shareButton.dataset.index, 10);
+                    const textToShare = state.results[index][contentType];
+                    shareText(textToShare, shareButton);
                 }
             });
 
+            // Modal event listeners
+            aboutBtn.addEventListener('click', showModal);
+            closeModalBtn.addEventListener('click', hideModal);
+            closeModalBtn2.addEventListener('click', hideModal);
+            aboutModal.addEventListener('click', (e) => {
+                if (e.target === aboutModal) {
+                    hideModal();
+                }
+            });
+
+            // Initial render with default state
             render();
         });
     </script>
