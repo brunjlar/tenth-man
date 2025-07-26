@@ -179,30 +179,65 @@
         }
 
         // --- API HELPER ---
-        async function callGeminiApi(prompt, apiKey) {
+        async function callGeminiApi(userPrompt, apiKey, systemInstruction = null) {
+            console.groupCollapsed(`API Call | System: ${systemInstruction ? systemInstruction.substring(0, 20) : 'None'}...`);
+            console.log("System Instruction:", systemInstruction);
+            console.log("User Prompt:", userPrompt);
+
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+
             const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, topK: 1, topP: 1, maxOutputTokens: 2048 },
+                contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                // **FIX**: Increased maxOutputTokens to allow for longer responses
+                generationConfig: { temperature: 0.7, topK: 1, topP: 1, maxOutputTokens: 65536 },
             };
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`API Error: ${errorData.error.message} (Status: ${response.status})`);
+
+            if (systemInstruction) {
+                payload.systemInstruction = { parts: [{ text: systemInstruction }] };
             }
-            const result = await response.json();
-            if (result.candidates && result.candidates[0]?.content.parts[0]) {
-                return result.candidates[0].content.parts[0].text;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("API HTTP Error:", response.status, errorData);
+                    throw new Error(`API Error: ${errorData.error.message} (Status: ${response.status})`);
+                }
+
+                const result = await response.json();
+                console.log("Full API Response:", result);
+
+                const candidate = result.candidates?.[0];
+                const text = candidate?.content?.parts?.[0]?.text;
+
+                if (text && text.trim() !== '') {
+                    console.log("Response Text:", text);
+                    console.groupEnd();
+                    return text;
+                } else {
+                    // More detailed error handling based on finishReason
+                    const finishReason = candidate?.finishReason;
+                    console.error(`API call finished with reason: ${finishReason}`);
+                    let errorMessage = "API returned an empty or invalid response.";
+                    if (finishReason === 'SAFETY') {
+                        errorMessage = "Response was blocked for safety reasons. Please adjust your prompt.";
+                    } else if (finishReason === 'MAX_TOKENS') {
+                        errorMessage = "Response was stopped because it reached the maximum length.";
+                    } else if (finishReason) {
+                        errorMessage = `An issue occurred. (Finish Reason: ${finishReason})`;
+                    }
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                console.error("callGeminiApi Failed:", error);
+                console.groupEnd();
+                throw error; // Re-throw the error to be caught by handleGenerate
             }
-            const finishReason = result.candidates?.[0]?.finishReason;
-            if (finishReason === 'SAFETY') {
-                throw new Error("The response was blocked due to safety settings. Please adjust your prompt.");
-            }
-            throw new Error("Received an empty or invalid response from the API.");
         }
 
         // --- EVENT HANDLERS & LOGIC ---
@@ -216,37 +251,56 @@
                 return;
             }
 
+            console.clear(); // Clear console for new run
+            console.group("--- Starting New Refinement Process ---");
             updateState({ isLoading: true, error: null, results: [] });
 
+            const expertSystemInstruction = 'You are an expert assistant. Your goal is to provide a detailed and well-structured response.';
+            const tenthManSystemInstruction = 'You are the "Tenth Man," a contrarian thinker tasked with finding flaws, hidden assumptions, and alternative perspectives. Your goal is to strengthen the original argument by challenging it. Be direct, insightful, and constructive. Do not agree with the text. Your critique should be actionable.';
+            const synthesizerSystemInstruction = 'You are a synthesizer and refiner. Your task is to integrate an original response with its critique to create a new, improved version. The new version should address the weaknesses and incorporate the valid points from the critique, resulting in a more robust and comprehensive answer.';
+
             try {
+                // Step 1: Initial Response
+                console.log("Step 1: Generating Initial Response...");
                 updateState({ activeIteration: 0 });
-                const initialPrompt = `You are an expert assistant. Provide a detailed and well-structured response to the following prompt: "${state.prompt}"`;
-                let currentResponse = await callGeminiApi(initialPrompt, state.apiKey);
+                const initialUserPrompt = `Respond to the following prompt: "${state.prompt}"`;
+                let currentResponse = await callGeminiApi(initialUserPrompt, state.apiKey, expertSystemInstruction);
+                console.log("Received Initial Response:", currentResponse);
 
                 let allResults = [{ id: 0, response: currentResponse, critique: '' }];
-                updateState({ results: [...allResults] }); // Render initial response immediately
+                updateState({ results: [...allResults] });
 
+                // Loop for critiques and syntheses
                 for (let i = 0; i < state.iterations; i++) {
                     updateState({ activeIteration: i });
 
-                    const critiquePrompt = `You are the "Tenth Man," a contrarian thinker tasked with finding flaws, hidden assumptions, and alternative perspectives. Your critical analysis of:\n---\n${currentResponse}`;
-                    const critique = await callGeminiApi(critiquePrompt, state.apiKey);
+                    // Step 2: Critique
+                    console.log(`Step 2 (Iter ${i + 1}): Generating Critique...`);
+                    const critiqueUserPrompt = `The user's original request was: "${state.prompt}"\n\nCritically analyze the following text which was generated in response to that request:\n---\n${currentResponse}`;
+                    const critique = await callGeminiApi(critiqueUserPrompt, state.apiKey, tenthManSystemInstruction);
+                    console.log(`Received Critique for Iter ${i + 1}:`, critique);
 
                     allResults[i].critique = critique;
-                    updateState({ results: [...allResults] }); // Render critique
+                    updateState({ results: [...allResults] });
 
+                    // Step 3: Synthesis (if not the last iteration)
                     if (i < state.iterations - 1) {
-                        const synthesisPrompt = `You are a synthesizer. Integrate the original response with its critique to create an improved version. Original:\n---\n${currentResponse}\n---\nCritique:\n---\n${critique}\n---\nRefined response:`;
-                        const synthesis = await callGeminiApi(synthesisPrompt, state.apiKey);
+                        console.log(`Step 3 (Iter ${i + 1}): Generating Synthesis...`);
+                        const synthesisUserPrompt = `Original Response:\n---\n${currentResponse}\n---\nCritique of the Response:\n---\n${critique}\n---\nBased on the critique, provide a new, refined response:`;
+                        const synthesis = await callGeminiApi(synthesisUserPrompt, state.apiKey, synthesizerSystemInstruction);
+                        console.log(`Received Synthesis for Iter ${i + 1}:`, synthesis);
+
                         currentResponse = synthesis;
                         allResults.push({ id: i + 1, response: currentResponse, critique: '' });
-                        updateState({ results: [...allResults] }); // Render next refinement response
+                        updateState({ results: [...allResults] });
                     }
                 }
             } catch (err) {
+                console.error("Error during generation process:", err);
                 updateState({ error: err.message || "An unknown error occurred." });
             } finally {
                 updateState({ isLoading: false, activeIteration: null });
+                console.groupEnd();
             }
         }
 
@@ -258,17 +312,15 @@
 
             if (!textToShare) return;
 
-            // Use Web Share API if available (mobile)
             if (navigator.share) {
                 try {
                     await navigator.share({ text: textToShare });
                     return;
                 } catch (err) {
-                    console.info("Web Share API cancelled.", err);
+                    console.info("Web Share API cancelled.", err.name !== 'AbortError' ? err : '');
                 }
             }
 
-            // Fallback to clipboard for desktop
             try {
                 const ta = document.createElement('textarea');
                 ta.value = textToShare;
@@ -279,7 +331,6 @@
                 document.execCommand('copy');
                 document.body.removeChild(ta);
 
-                // Visual feedback
                 const originalIcon = button.innerHTML;
                 button.innerHTML = `<svg class="share-icon text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`;
                 setTimeout(() => { button.innerHTML = originalIcon; }, 2000);
@@ -311,7 +362,6 @@
             iterationsInput.addEventListener('input', (e) => updateState({ iterations: Number(e.target.value) }));
             generateBtn.addEventListener('click', handleGenerate);
 
-            // Event delegation for share buttons
             resultsContainer.addEventListener('click', (e) => {
                 const shareButton = e.target.closest('.share-btn');
                 if (shareButton) {
