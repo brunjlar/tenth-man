@@ -153,6 +153,13 @@
     <!-- Floating Navigation Button Group -->
     <div id="nav-button-group"
         class="fixed bottom-8 right-8 z-40 flex flex-col items-center space-y-2 opacity-0 transform translate-y-4 pointer-events-none">
+        <button id="share-all-btn" class="nav-btn" title="Share All Content">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+        </button>
         <button id="prev-result-btn" class="nav-btn" title="Previous Result">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
@@ -188,6 +195,7 @@
         const closeModalBtn = document.getElementById('close-modal-btn');
         const closeModalBtn2 = document.getElementById('close-modal-btn-2');
         const navButtonGroup = document.getElementById('nav-button-group');
+        const shareAllBtn = document.getElementById('share-all-btn');
         const prevResultBtn = document.getElementById('prev-result-btn');
         const backToTopBtn = document.getElementById('back-to-top-btn');
         const nextResultBtn = document.getElementById('next-result-btn');
@@ -410,6 +418,36 @@
             }
         }
 
+        // --- SHARE ALL HANDLER ---
+        function handleShareAll() {
+            if (state.results.length === 0) return;
+
+            const output = [];
+            output.push("# Tenth Man AI Refinement");
+            output.push("---");
+            output.push("## Original Prompt");
+            output.push(state.prompt);
+
+            state.results.forEach((result, index) => {
+                output.push("\n---\n");
+                if (index === 0) {
+                    output.push("## Initial Response");
+                } else {
+                    output.push(`## Refinement ${index}`);
+                }
+                output.push(result.response);
+
+                // **FIX**: Only add critique if it exists
+                if (result.critique) {
+                    output.push(`\n## Critique ${index + 1}`);
+                    output.push(result.critique);
+                }
+            });
+
+            const fullText = output.join('\n\n');
+            shareText(fullText, shareAllBtn);
+        }
+
         // --- STATE UPDATE HELPER ---
         function updateState(newState) {
             state = { ...state, ...newState };
@@ -426,7 +464,7 @@
             aboutModal.classList.remove('flex');
         }
 
-        // --- **REVISED**: NAVIGATION LOGIC ---
+        // --- NAVIGATION LOGIC ---
         function setupNavigationObserver() {
             if (intersectionObserver) {
                 intersectionObserver.disconnect();
@@ -446,8 +484,6 @@
                 });
             };
 
-            // This observer uses a margin to define the "active" area as the center of the viewport.
-            // When a result card enters this area, it becomes the current one.
             intersectionObserver = new IntersectionObserver(handleIntersection, {
                 root: null,
                 rootMargin: "-50% 0px -50% 0px",
@@ -460,7 +496,6 @@
         function updateNavButtonsState() {
             const sections = document.querySelectorAll('.result-item');
             if (currentVisibleIndex === -1) {
-                // If no section is "active", find the one closest to the top.
                 let closestIndex = 0;
                 let minTop = Infinity;
                 sections.forEach((section, index) => {
@@ -540,7 +575,7 @@
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 300 && state.results.length > 0) {
                     navButtonGroup.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-                    updateNavButtonsState(); // Update button states on scroll
+                    updateNavButtonsState();
                 } else {
                     navButtonGroup.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
                 }
@@ -550,6 +585,7 @@
             });
             prevResultBtn.addEventListener('click', () => handleNavClick('prev'));
             nextResultBtn.addEventListener('click', () => handleNavClick('next'));
+            shareAllBtn.addEventListener('click', handleShareAll);
 
             // Initial render with default state
             render();
