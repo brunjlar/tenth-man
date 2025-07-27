@@ -16,9 +16,10 @@ In this app, one AI instance generates a response, and a second 'Tenth Man' AI i
 
 * **On-Demand Refinement:** Instead of choosing the number of iterations in advance, you can refine the AI's response step-by-step, deciding after each cycle whether to continue.  
 * **Side-by-Side View:** Clearly see the generated response next to its corresponding critique for easy comparison.  
-* **Floating Navigation:** Once results are generated, a navigation hub appears, allowing you to jump between previous/next iterations or return to the top with a single click.  
+* **Full Navigation Control:** A floating navigation hub appears once results are generated, allowing you to jump to the previous, next, or **very last** result, as well as instantly return to the top.  
+* **Share Everything:** A dedicated button in the navigation hub compiles the entire session—prompt, responses, and critiques—into a single, cleanly formatted text block for easy sharing or saving.  
+* **Shareable Content:** Easily copy or share the initial prompt, any individual response, or any critique.  
 * **System Prompting:** Uses dedicated system instructions to guide the persona of the "Expert Assistant," the "Tenth Man," and the "Synthesizer" for better results.  
-* **Shareable Content:** Easily copy or share the initial prompt, any response, or any critique.  
 * **Secure API Key Storage:** Your API key is saved locally in your browser's storage and is never transmitted anywhere except directly to the Google AI API.
 
 ## **How to Use**

@@ -179,6 +179,13 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
         </button>
+        <!-- **NEW**: Jump to Last Button -->
+        <button id="last-result-btn" class="nav-btn" title="Last Result">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+            </svg>
+        </button>
     </div>
 
 
@@ -199,6 +206,7 @@
         const prevResultBtn = document.getElementById('prev-result-btn');
         const backToTopBtn = document.getElementById('back-to-top-btn');
         const nextResultBtn = document.getElementById('next-result-btn');
+        const lastResultBtn = document.getElementById('last-result-btn');
 
         // --- STATE MANAGEMENT ---
         let state = {
@@ -437,7 +445,6 @@
                 }
                 output.push(result.response);
 
-                // **FIX**: Only add critique if it exists
                 if (result.critique) {
                     output.push(`\n## Critique ${index + 1}`);
                     output.push(result.critique);
@@ -495,6 +502,8 @@
 
         function updateNavButtonsState() {
             const sections = document.querySelectorAll('.result-item');
+            const lastIndex = sections.length - 1;
+
             if (currentVisibleIndex === -1) {
                 let closestIndex = 0;
                 let minTop = Infinity;
@@ -506,23 +515,33 @@
                     }
                 });
                 prevResultBtn.disabled = closestIndex <= 0;
-                nextResultBtn.disabled = closestIndex >= sections.length - 1;
+                nextResultBtn.disabled = closestIndex >= lastIndex;
+                lastResultBtn.disabled = closestIndex >= lastIndex;
             } else {
                 prevResultBtn.disabled = currentVisibleIndex <= 0;
-                nextResultBtn.disabled = currentVisibleIndex >= sections.length - 1;
+                nextResultBtn.disabled = currentVisibleIndex >= lastIndex;
+                lastResultBtn.disabled = currentVisibleIndex >= lastIndex;
             }
         }
 
         function handleNavClick(direction) {
             const sections = document.querySelectorAll('.result-item');
-            if (sections.length === 0 || currentVisibleIndex === -1) return;
+            if (sections.length === 0) return;
 
             let targetIndex;
-            if (direction === 'prev') {
-                targetIndex = Math.max(0, currentVisibleIndex - 1);
-            } else { // 'next'
-                targetIndex = Math.min(sections.length - 1, currentVisibleIndex + 1);
+
+            if (direction === 'last') {
+                targetIndex = sections.length - 1;
+            } else if (currentVisibleIndex !== -1) {
+                if (direction === 'prev') {
+                    targetIndex = Math.max(0, currentVisibleIndex - 1);
+                } else { // 'next'
+                    targetIndex = Math.min(sections.length - 1, currentVisibleIndex + 1);
+                }
+            } else {
+                return; // Don't do anything if no section is active for prev/next
             }
+
             sections[targetIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -585,6 +604,7 @@
             });
             prevResultBtn.addEventListener('click', () => handleNavClick('prev'));
             nextResultBtn.addEventListener('click', () => handleNavClick('next'));
+            lastResultBtn.addEventListener('click', () => handleNavClick('last'));
             shareAllBtn.addEventListener('click', handleShareAll);
 
             // Initial render with default state
