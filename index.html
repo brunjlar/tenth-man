@@ -87,14 +87,8 @@
                             <input id="apiKey" type="password" placeholder="Enter your Google AI API Key"
                                 class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
                         </div>
-                        <!-- Iterations Slider -->
-                        <div>
-                            <label for="iterations" class="block text-sm font-medium text-gray-300 mb-2">
-                                Refinement Iterations: <span id="iterations-value"
-                                    class="font-bold text-blue-400">2</span>
-                            </label>
-                            <input id="iterations" type="range" min="1" max="5" value="2" />
-                        </div>
+                        <!-- Placeholder for alignment -->
+                        <div></div>
                     </div>
                     <!-- Prompt Input -->
                     <div class="mt-6 relative">
@@ -179,12 +173,11 @@
         </svg>
     </button>
 
+
     <script type="module">
         // --- DOM Element References ---
         const apiKeyInput = document.getElementById('apiKey');
         const promptInput = document.getElementById('prompt');
-        const iterationsInput = document.getElementById('iterations');
-        const iterationsValue = document.getElementById('iterations-value');
         const generateBtn = document.getElementById('generate-btn');
         const resultsContainer = document.getElementById('results-container');
         const statusContainer = document.getElementById('status-container');
@@ -199,28 +192,31 @@
         let state = {
             apiKey: '',
             prompt: '',
-            iterations: 2,
             results: [],
             isLoading: false,
             error: null,
-            activeIteration: null,
+            statusMessage: '',
         };
 
         // --- RENDER FUNCTION ---
         function render() {
             apiKeyInput.value = state.apiKey;
             promptInput.value = state.prompt;
-            iterationsInput.value = state.iterations;
-            iterationsValue.textContent = state.iterations;
 
             generateBtn.disabled = state.isLoading;
-            generateBtn.textContent = state.isLoading ? 'Generating...' : 'Start Refinement';
+            if (state.isLoading) {
+                generateBtn.textContent = 'Generating...';
+            } else if (state.results.length > 0) {
+                generateBtn.textContent = 'Refine Further';
+            } else {
+                generateBtn.textContent = 'Start Refinement';
+            }
 
             statusContainer.innerHTML = '';
             if (state.error) {
                 statusContainer.innerHTML = `<div class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg text-center">${state.error}</div>`;
-            } else if (state.isLoading && state.activeIteration !== null) {
-                statusContainer.innerHTML = `<div class="bg-blue-500/20 border border-blue-500 text-blue-300 px-4 py-3 rounded-lg text-center animate-pulse">Processing Iteration ${state.activeIteration + 1} of ${state.iterations}...</div>`;
+            } else if (state.isLoading && state.statusMessage) {
+                statusContainer.innerHTML = `<div class="bg-blue-500/20 border border-blue-500 text-blue-300 px-4 py-3 rounded-lg text-center animate-pulse">${state.statusMessage}</div>`;
             }
 
             resultsContainer.innerHTML = state.results.map((result, index) => `
@@ -322,52 +318,57 @@
                 return;
             }
 
-            console.clear();
-            console.group("--- Starting New Refinement Process ---");
-            updateState({ isLoading: true, error: null, results: [] });
+            updateState({ isLoading: true, error: null });
 
             const expertSystemInstruction = 'You are an expert assistant. Your goal is to provide a detailed and well-structured response.';
             const tenthManSystemInstruction = 'You are the "Tenth Man," a contrarian thinker tasked with finding flaws, hidden assumptions, and alternative perspectives. Your goal is to strengthen the original argument by challenging it. Be direct, insightful, and constructive. Do not agree with the text. Your critique should be actionable.';
             const synthesizerSystemInstruction = 'You are a synthesizer and refiner. Your task is to integrate an original response with its critique to create a new, improved version. The new version should address the weaknesses and incorporate the valid points from the critique, resulting in a more robust and comprehensive answer.';
 
             try {
-                console.log("Step 1: Generating Initial Response...");
-                updateState({ activeIteration: 0 });
-                const initialUserPrompt = `Respond to the following prompt: "${state.prompt}"`;
-                let currentResponse = await callGeminiApi(initialUserPrompt, state.apiKey, expertSystemInstruction);
-                console.log("Received Initial Response:", currentResponse);
+                if (state.results.length === 0) {
+                    // --- Initial Run ---
+                    console.clear();
+                    console.group("--- Starting New Refinement Process ---");
+                    updateState({ statusMessage: 'Generating Initial Response...' });
+                    const initialUserPrompt = `Respond to the following prompt: "${state.prompt}"`;
+                    const initialResponse = await callGeminiApi(initialUserPrompt, state.apiKey, expertSystemInstruction);
 
-                let allResults = [{ id: 0, response: currentResponse, critique: '' }];
-                updateState({ results: [...allResults] });
+                    // **FIX**: Update UI immediately with the initial response
+                    let currentResults = [{ id: 0, response: initialResponse, critique: '' }];
+                    updateState({ results: currentResults, statusMessage: 'Generating Critique...' });
 
-                for (let i = 0; i < state.iterations; i++) {
-                    updateState({ activeIteration: i });
-
-                    console.log(`Step 2 (Iter ${i + 1}): Generating Critique...`);
-                    const critiqueUserPrompt = `The user's original request was: "${state.prompt}"\n\nCritically analyze the following text which was generated in response to that request:\n---\n${currentResponse}`;
+                    const critiqueUserPrompt = `The user's original request was: "${state.prompt}"\n\nCritically analyze the following text which was generated in response to that request:\n---\n${initialResponse}`;
                     const critique = await callGeminiApi(critiqueUserPrompt, state.apiKey, tenthManSystemInstruction);
-                    console.log(`Received Critique for Iter ${i + 1}:`, critique);
 
-                    allResults[i].critique = critique;
-                    updateState({ results: [...allResults] });
+                    // Update the existing result with the new critique
+                    currentResults[0].critique = critique;
+                    updateState({ results: [...currentResults] });
 
-                    if (i < state.iterations - 1) {
-                        console.log(`Step 3 (Iter ${i + 1}): Generating Synthesis...`);
-                        updateState({ activeIteration: i + 1 });
-                        const synthesisUserPrompt = `Original Response:\n---\n${currentResponse}\n---\nCritique of the Response:\n---\n${critique}\n---\nBased on the critique, provide a new, refined response:`;
-                        const synthesis = await callGeminiApi(synthesisUserPrompt, state.apiKey, synthesizerSystemInstruction);
-                        console.log(`Received Synthesis for Iter ${i + 1}:`, synthesis);
+                } else {
+                    // --- Refinement Run ---
+                    console.group(`--- Starting Refinement Iteration ${state.results.length} ---`);
+                    const lastResult = state.results[state.results.length - 1];
 
-                        currentResponse = synthesis;
-                        allResults.push({ id: i + 1, response: currentResponse, critique: '' });
-                        updateState({ results: [...allResults] });
-                    }
+                    updateState({ statusMessage: 'Generating Synthesis...' });
+                    const synthesisUserPrompt = `Original Response:\n---\n${lastResult.response}\n---\nCritique of the Response:\n---\n${lastResult.critique}\n---\nBased on the critique, provide a new, refined response:`;
+                    const synthesis = await callGeminiApi(synthesisUserPrompt, state.apiKey, synthesizerSystemInstruction);
+
+                    // **FIX**: Update UI immediately with the synthesis
+                    let currentResults = [...state.results, { id: state.results.length, response: synthesis, critique: '' }];
+                    updateState({ results: currentResults, statusMessage: 'Generating Critique...' });
+
+                    const newCritiqueUserPrompt = `The user's original request was: "${state.prompt}"\n\nCritically analyze the following text which was generated in response to that request:\n---\n${synthesis}`;
+                    const newCritique = await callGeminiApi(newCritiqueUserPrompt, state.apiKey, tenthManSystemInstruction);
+
+                    // **FIX**: Update the latest result with its critique
+                    currentResults[currentResults.length - 1].critique = newCritique;
+                    updateState({ results: [...currentResults] });
                 }
             } catch (err) {
                 console.error("Error during generation process:", err);
                 updateState({ error: err.message || "An unknown error occurred." });
             } finally {
-                updateState({ isLoading: false, activeIteration: null });
+                updateState({ isLoading: false, statusMessage: '' });
                 console.groupEnd();
             }
         }
@@ -432,8 +433,13 @@
                 updateState({ apiKey: e.target.value });
                 localStorage.setItem('aiCritiqueAppApiKey', e.target.value);
             });
-            promptInput.addEventListener('input', (e) => updateState({ prompt: e.target.value }));
-            iterationsInput.addEventListener('input', (e) => updateState({ iterations: Number(e.target.value) }));
+            promptInput.addEventListener('input', (e) => {
+                if (state.results.length > 0) {
+                    updateState({ prompt: e.target.value, results: [], error: null });
+                } else {
+                    updateState({ prompt: e.target.value });
+                }
+            });
             generateBtn.addEventListener('click', handleGenerate);
 
             sharePromptBtn.addEventListener('click', (e) => {
