@@ -2,7 +2,7 @@
 
 This repository contains a single-page web application that uses an iterative AI process to generate, critique, and refine text-based responses based on the 'Tenth Man' principle.
 
-The application allows a user to input a prompt, which is sent to an initial AI assistant. A second AI, acting as a "Tenth Man," is then tasked with challenging the initial response. This cycle of response, critique, and synthesis can be repeated multiple times to produce a more robust and well-considered final answer.
+The application allows a user to input a prompt, which is sent to an initial AI assistant. A second AI, acting as a "Tenth Man," is then tasked with challenging the initial response. This cycle of response, critique, and synthesis can be repeated on-demand to produce a more robust and well-considered final answer.
 
 ## **How it Works: The Tenth Man Principle**
 
@@ -14,12 +14,11 @@ In this app, one AI instance generates a response, and a second 'Tenth Man' AI i
 
 ## **Features**
 
-* **Iterative Refinement:** Go beyond a single AI response by having it critiqued and improved over multiple cycles.  
+* **On-Demand Refinement:** Instead of choosing the number of iterations in advance, you can refine the AI's response step-by-step, deciding after each cycle whether to continue.  
 * **Side-by-Side View:** Clearly see the generated response next to its corresponding critique for easy comparison.  
-* **Configurable Iterations:** Use a slider to control how many refinement cycles the application should perform.  
+* **Floating Navigation:** Once results are generated, a navigation hub appears, allowing you to jump between previous/next iterations or return to the top with a single click.  
 * **System Prompting:** Uses dedicated system instructions to guide the persona of the "Expert Assistant," the "Tenth Man," and the "Synthesizer" for better results.  
 * **Shareable Content:** Easily copy or share the initial prompt, any response, or any critique.  
-* **Sticky Header:** The main controls stay in view while you scroll through the results.  
 * **Secure API Key Storage:** Your API key is saved locally in your browser's storage and is never transmitted anywhere except directly to the Google AI API.
 
 ## **How to Use**
@@ -28,8 +27,8 @@ In this app, one AI instance generates a response, and a second 'Tenth Man' AI i
 2. **Open in Browser:** Open the index.html file in any modern web browser.  
 3. **Enter API Key:** Provide your Google AI API key. The application uses the gemini-2.5-pro model.  
 4. **Write a Prompt:** Enter the prompt you want the AI to respond to.  
-5. **Set Iterations:** Choose the number of refinement cycles (defaults to 2).  
-6. **Start Refinement:** Click the button and watch the process unfold.
+5. **Start Refinement:** Click the "Start Refinement" button. The app will generate the initial response and its first critique.  
+6. **Refine Further:** If you are not satisfied with the result, click the "Refine Further" button to run another cycle of synthesis and critique. Repeat as many times as you see fit.
 
 ## **License**
 
