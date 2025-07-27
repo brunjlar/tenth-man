@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
     <meta charset="UTF-8">
@@ -58,6 +58,10 @@
             height: 1.25rem;
             stroke-width: 2;
         }
+
+        #back-to-top-btn {
+            transition: opacity 0.3s, transform 0.3s;
+        }
     </style>
 </head>
 
@@ -66,8 +70,7 @@
     <div id="app" class="container mx-auto p-4 md:p-8 flex flex-col min-h-screen">
 
         <main class="flex-grow">
-            <!-- Sticky Header Wrapper -->
-            <div class="sticky top-0 z-10 bg-gray-900 pt-4 md:pt-8">
+            <div id="header-section">
                 <header class="text-center mb-8">
                     <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Iterative AI Refinement</h1>
                     <p class="text-lg text-gray-400">Using a "Tenth Man" critique to improve AI responses.</p>
@@ -123,7 +126,7 @@
             <div id="results-container" class="space-y-8"></div>
         </main>
 
-        <!-- **NEW**: Footer Section -->
+        <!-- Footer Section -->
         <footer class="text-center py-6 text-gray-500 text-sm">
             <button id="about-btn" class="hover:text-white transition underline mb-2">About This App</button>
             <p>
@@ -135,7 +138,7 @@
         </footer>
     </div>
 
-    <!-- **NEW**: About Modal -->
+    <!-- About Modal -->
     <div id="about-modal"
         class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 transition-opacity">
         <div class="bg-gray-800 rounded-2xl shadow-xl p-6 md:p-8 max-w-2xl w-full text-gray-300 border border-gray-700">
@@ -166,6 +169,13 @@
         </div>
     </div>
 
+    <button id="back-to-top-btn"
+        class="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg z-40 opacity-0 transform translate-y-4 pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+        </svg>
+    </button>
 
     <script type="module">
         // --- DOM Element References ---
@@ -181,6 +191,7 @@
         const aboutModal = document.getElementById('about-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const closeModalBtn2 = document.getElementById('close-modal-btn-2');
+        const backToTopBtn = document.getElementById('back-to-top-btn');
 
         // --- STATE MANAGEMENT ---
         let state = {
@@ -444,6 +455,18 @@
                 if (e.target === aboutModal) {
                     hideModal();
                 }
+            });
+
+            // **NEW**: Back to Top button logic
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+                } else {
+                    backToTopBtn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+                }
+            });
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
 
             // Initial render with default state
